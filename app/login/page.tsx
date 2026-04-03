@@ -55,22 +55,36 @@ function LoginContent() {
 
     setAutoLogging(true);
 
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+
     api
-      .post("/api/auth/login", {
-        code,
-        codeVerifier,
-        redirectUri: REDIRECT_URI,
-        platform: "WEB",
-        fcmToken: "",
-      })
+      .post(
+        "/api/auth/login",
+        {
+          code,
+          codeVerifier,
+          redirectUri: REDIRECT_URI,
+          platform: "WEB",
+          fcmToken: "",
+        },
+        { signal: controller.signal }
+      )
       .then((res) => {
+        clearTimeout(timeout);
         const { accessToken } = res.data.data;
         localStorage.setItem("access_token", accessToken);
         localStorage.removeItem("tiktok_code_verifier");
         router.replace("/pricelist");
       })
-      .catch(() => {
-        setError("Login failed. Please try again.");
+      .catch((err) => {
+        clearTimeout(timeout);
+        const isTimeout = err?.code === "ERR_CANCELED" || err?.name === "AbortError";
+        setError(
+          isTimeout
+            ? "Server is taking too long. Please try again."
+            : "Login failed. Please try again."
+        );
         setAutoLogging(false);
       });
   }, [searchParams, router]);
@@ -81,12 +95,20 @@ function LoginContent() {
     try {
       const res = await api.get("/api/auth/tiktok/authorize", {
         params: { redirectUri: REDIRECT_URI },
+        timeout: 30000,
       });
       const { authUrl, codeVerifier } = res.data.data;
       localStorage.setItem("tiktok_code_verifier", codeVerifier);
       window.location.href = authUrl;
-    } catch {
-      setError("Failed to connect to TikTok. Please try again.");
+    } catch (err: unknown) {
+      const isTimeout =
+        (err as { code?: string })?.code === "ECONNABORTED" ||
+        (err as { code?: string })?.code === "ERR_CANCELED";
+      setError(
+        isTimeout
+          ? "Server is waking up, please try again in a moment."
+          : "Failed to connect to TikTok. Please try again."
+      );
       setLoading(false);
     }
   };

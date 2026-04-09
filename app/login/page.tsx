@@ -50,7 +50,7 @@ function LoginContent() {
     const code = searchParams.get("code");
     if (!code) return;
 
-    const codeVerifier = localStorage.getItem("tiktok_code_verifier");
+    const codeVerifier = sessionStorage.getItem("codeVerifier");
     if (!codeVerifier) return;
 
     setAutoLogging(true);
@@ -73,9 +73,9 @@ function LoginContent() {
       .then((res) => {
         clearTimeout(timeout);
         const { accessToken } = res.data.data;
-        localStorage.setItem("access_token", accessToken);
-        localStorage.removeItem("tiktok_code_verifier");
-        router.replace("/pricelist");
+        localStorage.setItem("token", accessToken);
+        sessionStorage.removeItem("codeVerifier");
+        router.replace("/dashboard");
       })
       .catch((err) => {
         clearTimeout(timeout);
@@ -94,11 +94,11 @@ function LoginContent() {
     setError(null);
     try {
       const res = await api.get("/api/auth/tiktok/authorize", {
-        params: { redirectUri: REDIRECT_URI },
+        params: { redirectUri: REDIRECT_URI, platform: "WEB" },
         timeout: 30000,
       });
       const { authUrl, codeVerifier } = res.data.data;
-      localStorage.setItem("tiktok_code_verifier", codeVerifier);
+      sessionStorage.setItem("codeVerifier", codeVerifier);
       window.location.href = authUrl;
     } catch (err: unknown) {
       const isTimeout =

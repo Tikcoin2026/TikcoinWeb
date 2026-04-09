@@ -75,7 +75,7 @@ function LoginContent() {
         const { accessToken } = res.data.data;
         localStorage.setItem("token", accessToken);
         sessionStorage.removeItem("codeVerifier");
-        router.replace("/dashboard");
+        router.replace("/pricelist");
       })
       .catch((err) => {
         clearTimeout(timeout);

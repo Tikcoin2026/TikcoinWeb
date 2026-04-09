@@ -73,7 +73,7 @@ function LoginContent() {
       .then((res) => {
         clearTimeout(timeout);
         const { accessToken } = res.data.data;
-        localStorage.setItem("token", accessToken);
+        localStorage.setItem("access_token", accessToken);
         sessionStorage.removeItem("codeVerifier");
         router.replace("/pricelist");
       })
